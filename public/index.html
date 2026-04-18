@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FotoMágica Studio | Background Remover & Compositor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="background-blobs">
+        <div class="blob shape1"></div>
+        <div class="blob shape2"></div>
+        <div class="blob shape3"></div>
+    </div>
+
+    <main class="app-container glassmorphism">
+        <header class="app-header">
+            <h1>FotoMágica<span class="highlight">.</span></h1>
+            <p>Magia con inteligencia artificial. Remueve y reemplaza fondos en segundos.</p>
+        </header>
+
+        <form id="uploadForm" class="upload-form">
+            <div class="inputs-row">
+                <!-- Source Image -->
+                <div class="file-upload-wrapper">
+                    <label class="file-drop-zone" for="source" id="drop-zone-source">
+                        <div class="icon">📸</div>
+                        <span class="title">Sujeto</span>
+                        <span class="subtitle">Sube la foto base</span>
+                        <input type="file" id="source" name="source" accept="image/*" required>
+                        <div class="preview-layer" id="preview-source"></div>
+                    </label>
+                </div>
+                
+                <!-- Background Image -->
+                <div class="file-upload-wrapper">
+                    <label class="file-drop-zone" for="background" id="drop-zone-bg">
+                        <div class="icon">🎨</div>
+                        <span class="title">Fondo</span>
+                        <span class="subtitle">Sube el destino</span>
+                        <input type="file" id="background" name="background" accept="image/*" required>
+                        <div class="preview-layer" id="preview-bg"></div>
+                    </label>
+                </div>
+
+                <!-- Logo Image [NEW] -->
+                <div class="file-upload-wrapper">
+                    <label class="file-drop-zone" for="logo" id="drop-zone-logo">
+                        <div class="icon">🏷️</div>
+                        <span class="title">Logo</span>
+                        <span class="subtitle">Opcional: Sube tu logo</span>
+                        <input type="file" id="logo" name="logo" accept="image/*">
+                        <div class="preview-layer" id="preview-logo"></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Email section -->
+            <div class="input-group">
+                <label for="email">¿A dónde enviamos el resultado?</label>
+                <input type="email" id="email" placeholder="tu@correo.com" required>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                <span class="btn-text">Generar Magia ✨</span>
+                <div class="loader" id="btn-loader"></div>
+            </button>
+        </form>
+
+        <div id="result-container" class="result-box hidden">
+            <h3>¡Tu creación está lista!</h3>
+            <div class="result-image-wrapper">
+                <img id="final-image" src="" alt="Resultado">
+            </div>
+            <p>También hemos intentado enviarla a tu correo.</p>
+        </div>
+
+        <div id="status-message" class="status-box hidden">
+            <!-- Messages go here -->
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

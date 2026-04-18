@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Reseñas | Foto Mágica Studio</title>
+    <link rel="stylesheet" href="admin.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <span class="magic">✨</span>
+                <h1>Panel Administrativo</h1>
+            </div>
+            <p class="subtitle">Seguimiento de interacción con reseñas de clientes</p>
+        </header>
+
+        <main>
+            <section class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-label">Total Envíos</span>
+                    <span class="stat-value" id="total-sent">0</span>
+                </div>
+                <div class="stat-card success">
+                    <span class="stat-label">Clics Recibidos</span>
+                    <span class="stat-value" id="total-clicks">0</span>
+                </div>
+                <div class="stat-card pending">
+                    <span class="stat-label">Tasa de Conversión</span>
+                    <span class="stat-value" id="conversion-rate">0%</span>
+                </div>
+            </section>
+
+            <section class="table-container">
+                <div class="table-header">
+                    <h2>Registros de Actividad</h2>
+                    <button id="refresh-btn" class="btn-refresh">🔄 Actualizar</button>
+                </div>
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Email del Cliente</th>
+                                <th>Fecha de Envío</th>
+                                <th>Estado</th>
+                                <th>Fecha del Clic</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reviews-body">
+                            <!-- Los datos se cargarán aquí dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 Foto Mágica Studio - Sistema de Rastreo</p>
+        </footer>
+    </div>
+    <script src="admin.js"></script>
+</body>
+</html>

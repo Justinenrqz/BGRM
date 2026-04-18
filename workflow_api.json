@@ -1,0 +1,66 @@
+{
+  "1": {
+    "inputs": {
+      "image": "source_image.jpg",
+      "upload": "image"
+    },
+    "class_type": "LoadImage"
+  },
+  "2": {
+    "inputs": {
+      "image": "background_image.jpg",
+      "upload": "image"
+    },
+    "class_type": "LoadImage"
+  },
+  "10": {
+    "inputs": {
+      "upscale_method": "area",
+      "width": 1024,
+      "height": 1024,
+      "crop": "center",
+      "image": [ "1", 0 ]
+    },
+    "class_type": "ImageScale"
+  },
+  "11": {
+    "inputs": {
+      "upscale_method": "area",
+      "width": 1024,
+      "height": 1024,
+      "crop": "center",
+      "image": [ "2", 0 ]
+    },
+    "class_type": "ImageScale"
+  },
+  "3": {
+    "inputs": {
+    },
+    "class_type": "BRIA_RMBG_ModelLoader_Zho"
+  },
+  "4": {
+    "inputs": {
+      "rmbgmodel": [ "3", 0 ],
+      "image": [ "10", 0 ]
+    },
+    "class_type": "BRIA_RMBG_Zho"
+  },
+  "5": {
+    "inputs": {
+      "destination": [ "11", 0 ],
+      "source": [ "10", 0 ],
+      "mask": [ "4", 1 ],
+      "x": 0,
+      "y": 0,
+      "resize_source": false
+    },
+    "class_type": "ImageCompositeMasked"
+  },
+  "6": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [ "5", 0 ]
+    },
+    "class_type": "SaveImage"
+  }
+}
