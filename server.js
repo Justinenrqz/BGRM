@@ -37,6 +37,41 @@ function saveTracker(data) {
     }
 }
 
+// Función auxiliar para obtener dimensiones de imagen (PNG/JPG)
+function getImageDimensions(filePath) {
+    try {
+        const buffer = fs.readFileSync(filePath);
+        // PNG Check
+        if (buffer[0] === 0x89 && buffer[1] === 0x50) {
+            return {
+                width: buffer.readUInt32BE(16),
+                height: buffer.readUInt32BE(20)
+            };
+        }
+        // JPG Check
+        if (buffer[0] === 0xFF && buffer[1] === 0xD8) {
+            let offset = 2;
+            while (offset < buffer.length) {
+                const marker = buffer.readUInt16BE(offset);
+                offset += 2;
+                if (marker === 0xFFC0 || marker === 0xFFC2) {
+                    offset += 3;
+                    return {
+                        height: buffer.readUInt16BE(offset),
+                        width: buffer.readUInt16BE(offset + 2)
+                    };
+                }
+                if (offset + 2 > buffer.length) break;
+                const length = buffer.readUInt16BE(offset);
+                offset += length;
+            }
+        }
+    } catch (e) {
+        console.error("Error leyendo dimensiones:", e.message);
+    }
+    return null;
+}
+
 // 1. Función para subir imágenes a ComfyUI
 async function uploadImageToComfyUI(filePath) {
     const formData = new FormData();
@@ -68,7 +103,7 @@ async function logicComfyUI(sourcePath, backgroundPath, logoPath = null) {
     console.log("Subiendo imágenes a ComfyUI...");
     const sourceData = await uploadImageToComfyUI(sourcePath);
     const bgData = await uploadImageToComfyUI(backgroundPath);
-    
+
     let logoData = null;
     if (logoPath) {
         logoData = await uploadImageToComfyUI(logoPath);
@@ -84,6 +119,38 @@ async function logicComfyUI(sourcePath, backgroundPath, logoPath = null) {
     if (workflow["1"]) workflow["1"].inputs.image = sourceData.name;
     if (workflow["2"]) workflow["2"].inputs.image = bgData.name;
 
+    // --- AJUSTE DE LA GENTE (DEPENDE DE SI HAY LOGO O NO) ---
+    let logoBottom = 0;
+    if (logoPath) {
+        const dimsLogo = getImageDimensions(logoPath);
+        if (dimsLogo) {
+            logoBottom = 40 + (dimsLogo.height * 0.7); // 40 es LOGO_Y, 0.7 es LOGO_SCALE
+        } else {
+            logoBottom = 200; // Fallback
+        }
+    }
+
+    const GAP = 30; // Margen de seguridad entre logo y gente
+    const availableHeight = 1024 - logoBottom - (logoBottom > 0 ? GAP : 0) - 40; // 40px de margen inferior
+    const TARGET_SIZE = Math.min(800, Math.round(availableHeight)); 
+    
+    const pX = Math.round((1024 - TARGET_SIZE) / 2);
+    // Centramos a la gente en el espacio que queda debajo del logo (o en todo el cuadro si no hay logo)
+    const centerY = logoBottom + (logoBottom > 0 ? GAP : 0) + (availableHeight / 2);
+    const pY = Math.round(centerY - (TARGET_SIZE / 2));
+
+    if (workflow["10"]) {
+        workflow["10"].inputs.width = TARGET_SIZE;
+        workflow["10"].inputs.height = TARGET_SIZE;
+        workflow["10"].inputs.crop = "center";
+    }
+
+    if (workflow["5"]) {
+        workflow["5"].inputs.x = pX;
+        workflow["5"].inputs.y = pY;
+    }
+    // -------------------------------------------------------
+
     // INYECTAR LOGO DINÁMICAMENTE SOLO SI EXISTE
     if (logoData) {
         // Nodo 20: Cargar el Logo
@@ -95,50 +162,59 @@ async function logicComfyUI(sourcePath, backgroundPath, logoPath = null) {
             "class_type": "LoadImage"
         };
 
-        // Nodo 22: Redimensionar la IMAGEN del logo PROPORCIONALMENTE
-        // Usamos 'area' para mantener la fidelidad del color rojo y los bordes suaves
+        // --- CÁLCULO DE CENTRADO DINÁMICO DEL LOGO ---
+        const LOGO_SCALE = 0.7; // Un poco más grande como se pidió
+        const dims = getImageDimensions(logoPath);
+        let logoX = 0;
+        
+        if (dims) {
+            const scaledWidth = dims.width * LOGO_SCALE;
+            logoX = Math.max(0, Math.round((1024 - scaledWidth) / 2));
+        } else {
+            logoX = 150; // Fallback
+        }
+
+        // Nodo 22: Redimensionar proporcionalmente
         workflow["22"] = {
             "inputs": {
                 "upscale_method": "area",
-                "scale_by": 0.25,
+                "scale_by": LOGO_SCALE,
                 "image": ["20", 0]
             },
             "class_type": "ImageScaleBy"
         };
 
-        // Nodo 25: Generar MÁSCARA desde la imagen ya escalada [NUEVO]
-        // Usamos el canal 'red' o 'max' para que todo lo que no sea negro (letras rojas/blancas) sea opaco
+        // Nodo 25: Luego aplicamos la IA sobre el logo ya escalado
+        // Esto garantiza que la imagen y la máscara tengan el mismo tamaño
         workflow["25"] = {
             "inputs": {
-                "channel": "red",
+                "rmbgmodel": ["3", 0],
                 "image": ["22", 0]
             },
-            "class_type": "ImageToMask"
+            "class_type": "BRIA_RMBG_Zho"
         };
 
-        // Nodo 21: Componer el logo sobre el resultado previo (Nodo 5)
+        // Nodo 21: Componer el logo con el centrado calculado
         workflow["21"] = {
             "inputs": {
-                "destination": [ "5", 0 ],
-                "source": [ "22", 0 ],
-                "mask": [ "25", 0 ],   // Usamos la máscara generada dinámicamente
-                "x": 30,
-                "y": 30,
+                "destination": ["5", 0],
+                "source": ["25", 0], // Imagen con transparencia de la IA
+                "mask": ["25", 1],   // Máscara de la IA (mismo tamaño)
+                "x": logoX,          // Centro exacto calculado en JS
+                "y": 40,
                 "resize_source": false
             },
             "class_type": "ImageCompositeMasked"
         };
 
-
-
         // Apuntar el guardado (Nodo 6) al nuevo nodo de logo
         if (workflow["6"]) {
-            workflow["6"].inputs.images = [ "21", 0 ];
+            workflow["6"].inputs.images = ["21", 0];
         }
     } else {
         // Si no hay logo, asegurar que Node 6 apunte a Node 5 (original)
         if (workflow["6"]) {
-            workflow["6"].inputs.images = [ "5", 0 ];
+            workflow["6"].inputs.images = ["5", 0];
         }
     }
 
@@ -215,7 +291,7 @@ async function logicComfyUI(sourcePath, backgroundPath, logoPath = null) {
 async function sendEmail(targetEmail, imageBuffer, trackingUrl) {
     // === CONFIGURACIÓN SIMPLE GMAIL ===
     const MI_CORREO = 'justinzene@gmail.com';
-    const MI_PASS = 'hbbhnkhzeclgimxi'; 
+    const MI_PASS = 'hbbhnkhzeclgimxi';
     const LINK_FINAL = trackingUrl || 'https://search.google.com/local/writereview?placeid=ChIJkYJhhy8nQg0Rg7PsosNKWWo';
 
     let transporter = nodemailer.createTransport({
@@ -252,7 +328,7 @@ async function sendEmail(targetEmail, imageBuffer, trackingUrl) {
 
 // Endpoint Principal
 app.post('/process-and-mail', upload.fields([
-    { name: 'source' }, 
+    { name: 'source' },
     { name: 'background' },
     { name: 'logo' }
 ]), async (req, res) => {
@@ -264,7 +340,7 @@ app.post('/process-and-mail', upload.fields([
 
     const sourcePath = req.files['source'][0].path;
     const bgPath = req.files['background'][0].path;
-    
+
     // El logo ahora es un archivo subido, no un ID
     const logoFile = req.files['logo'] ? req.files['logo'][0] : null;
     const logoPath = logoFile ? logoFile.path : null;
@@ -286,7 +362,7 @@ app.post('/process-and-mail', upload.fields([
         saveTracker(tracker);
 
         // Cambia 'localhost:3000' por tu dominio real si tienes uno
-        const BASE_URL = 'http://localhost:3000'; 
+        const BASE_URL = 'http://localhost:3000';
         const trackingUrl = `${BASE_URL}/go-to-review/${trackingId}`;
 
         // 4. Enviar email (no bloqueamos la respuesta si falla el email)
