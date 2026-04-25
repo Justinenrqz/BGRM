@@ -1,1 +1,2 @@
 PRUEBA.zip filter=lfs diff=lfs merge=lfs -text
+PRUEBA filter=lfs diff=lfs merge=lfs -text
