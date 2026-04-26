@@ -13,6 +13,18 @@
     },
     "class_type": "LoadImage"
   },
+  "3": {
+    "inputs": {
+    },
+    "class_type": "BRIA_RMBG_ModelLoader_Zho"
+  },
+  "4": {
+    "inputs": {
+      "rmbgmodel": [ "3", 0 ],
+      "image": [ "10", 0 ]
+    },
+    "class_type": "BRIA_RMBG_Zho"
+  },
   "10": {
     "inputs": {
       "upscale_method": "area",
@@ -33,23 +45,28 @@
     },
     "class_type": "ImageScale"
   },
-  "3": {
+  "12": {
     "inputs": {
+      "expand": -2,
+      "incremental_expandrate": 0,
+      "tapered_corners": true,
+      "mask": [ "4", 1 ]
     },
-    "class_type": "BRIA_RMBG_ModelLoader_Zho"
+    "class_type": "GrowMask"
   },
-  "4": {
+  "13": {
     "inputs": {
-      "rmbgmodel": [ "3", 0 ],
-      "image": [ "10", 0 ]
+      "amount": 2,
+      "device": "cpu",
+      "mask": [ "12", 0 ]
     },
-    "class_type": "BRIA_RMBG_Zho"
+    "class_type": "MaskBlur+"
   },
   "5": {
     "inputs": {
       "destination": [ "11", 0 ],
       "source": [ "10", 0 ],
-      "mask": [ "4", 1 ],
+      "mask": [ "13", 0 ],
       "x": 0,
       "y": 0,
       "resize_source": false

@@ -130,26 +130,27 @@ async function logicComfyUI(sourcePath, backgroundPath, logoPath = null) {
         }
     }
 
-    const GAP = 30; // Margen de seguridad entre logo y gente
-    const availableHeight = 1024 - logoBottom - (logoBottom > 0 ? GAP : 0) - 40; // 40px de margen inferior
-    const TARGET_SIZE = Math.min(800, Math.round(availableHeight)); 
-    
+    // Volvemos al recorte centrado para que las personas salgan GRANDES
+    // sin que se deformen (ensanchen). Esto recortará el suelo/techo extra.
+    const TARGET_SIZE = 950;
     const pX = Math.round((1024 - TARGET_SIZE) / 2);
-    // Centramos a la gente en el espacio que queda debajo del logo (o en todo el cuadro si no hay logo)
-    const centerY = logoBottom + (logoBottom > 0 ? GAP : 0) + (availableHeight / 2);
-    const pY = Math.round(centerY - (TARGET_SIZE / 2));
+    const pY = 1024 - TARGET_SIZE - 20; // Pegado al suelo
 
-    if (workflow["10"]) {
-        workflow["10"].inputs.width = TARGET_SIZE;
-        workflow["10"].inputs.height = TARGET_SIZE;
-        workflow["10"].inputs.crop = "center";
-    }
+    workflow["10"] = {
+        "inputs": {
+            "upscale_method": "bicubic",
+            "width": TARGET_SIZE,
+            "height": TARGET_SIZE,
+            "crop": "center", // Mantiene proporción, solo recorta los bordes vacíos
+            "image": ["1", 0]
+        },
+        "class_type": "ImageScale"
+    };
 
     if (workflow["5"]) {
         workflow["5"].inputs.x = pX;
         workflow["5"].inputs.y = pY;
     }
-    // -------------------------------------------------------
 
     // INYECTAR LOGO DINÁMICAMENTE SOLO SI EXISTE
     if (logoData) {
@@ -184,8 +185,7 @@ async function logicComfyUI(sourcePath, backgroundPath, logoPath = null) {
             "class_type": "ImageScaleBy"
         };
 
-        // Nodo 25: Luego aplicamos la IA sobre el logo ya escalado
-        // Esto garantiza que la imagen y la máscara tengan el mismo tamaño
+        // Nodo 25: Volvemos a BRIA para el logo (es lo más seguro)
         workflow["25"] = {
             "inputs": {
                 "rmbgmodel": ["3", 0],
@@ -194,12 +194,33 @@ async function logicComfyUI(sourcePath, backgroundPath, logoPath = null) {
             "class_type": "BRIA_RMBG_Zho"
         };
 
+        // Nodo 26: Eliminación estricta del borde negro del logo
+        workflow["26"] = {
+            "inputs": {
+                "expand": -5, // Recorte moderado-alto para quitar el borde negro
+                "incremental_expandrate": 0,
+                "tapered_corners": true,
+                "mask": ["25", 1] // Usamos la máscara de BRIA
+            },
+            "class_type": "GrowMask"
+        };
+
+        // Nodo 27: Suavizado de bordes del logo
+        workflow["27"] = {
+            "inputs": {
+                "amount": 2,
+                "device": "cpu",
+                "mask": ["26", 0]
+            },
+            "class_type": "MaskBlur+"
+        };
+
         // Nodo 21: Componer el logo con el centrado calculado
         workflow["21"] = {
             "inputs": {
                 "destination": ["5", 0],
-                "source": ["25", 0], // Imagen con transparencia de la IA
-                "mask": ["25", 1],   // Máscara de la IA (mismo tamaño)
+                "source": ["22", 0], // Usamos la imagen escalada
+                "mask": ["27", 0],   // Usamos la máscara refinada
                 "x": logoX,          // Centro exacto calculado en JS
                 "y": 40,
                 "resize_source": false
@@ -235,9 +256,12 @@ async function logicComfyUI(sourcePath, backgroundPath, logoPath = null) {
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Prompt API failed: ${response.statusText}`);
+                    const errorBody = await response.text();
+                    console.error("ComfyUI Error Body:", errorBody);
+                    throw new Error(`Prompt API failed: ${response.statusText} - ${errorBody}`);
                 }
             } catch (err) {
+                console.error("Error enviando prompt:", err.message);
                 reject(err);
             }
         });

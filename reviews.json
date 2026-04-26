@@ -198,5 +198,47 @@
     "email": "justinzene@gmail.com",
     "timestamp": "2026-04-24T19:34:50.594Z",
     "clicked": false
+  },
+  {
+    "id": "3866a788-3895-4df1-8927-87c68b695bcb",
+    "email": "justinzene@gmail.com",
+    "timestamp": "2026-04-26T08:45:00.422Z",
+    "clicked": false
+  },
+  {
+    "id": "47c02f71-78b3-41aa-acfb-83c27d293030",
+    "email": "justinzene@gmail.com",
+    "timestamp": "2026-04-26T09:39:16.473Z",
+    "clicked": false
+  },
+  {
+    "id": "d9c03ead-88fb-412b-b48c-8952772c4274",
+    "email": "justinzene@gmail.com",
+    "timestamp": "2026-04-26T09:42:06.582Z",
+    "clicked": false
+  },
+  {
+    "id": "18fd5d14-d5f8-4f5e-adb7-045cb4e6d719",
+    "email": "justinzene@gmail.com",
+    "timestamp": "2026-04-26T09:47:30.148Z",
+    "clicked": false
+  },
+  {
+    "id": "061bb39a-cb02-4ee7-8a09-c7dce6426f10",
+    "email": "justinzene@gmail.com",
+    "timestamp": "2026-04-26T09:50:56.198Z",
+    "clicked": false
+  },
+  {
+    "id": "1e8cadb8-b04d-48c9-824a-174a3ace821d",
+    "email": "justinzene@gmail.com",
+    "timestamp": "2026-04-26T09:56:18.650Z",
+    "clicked": false
+  },
+  {
+    "id": "a747a5dc-881d-4fce-bdb4-8bcf5d547bcf",
+    "email": "justinzene@gmail.com",
+    "timestamp": "2026-04-26T10:01:07.414Z",
+    "clicked": false
   }
 ]
